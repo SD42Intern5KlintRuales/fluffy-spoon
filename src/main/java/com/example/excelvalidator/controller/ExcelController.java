@@ -26,11 +26,13 @@ public class ExcelController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<ExcelValidationResponse> validateExcel(
-            @RequestParam("file") MultipartFile file
+            @RequestParam("file") MultipartFile excelFile,
+            @RequestParam("rules") MultipartFile rulesFile,
+            @RequestParam("fileType") String fileType
     ) throws Exception {
-        validateUploadFile(file);
+        validateUploadFile(excelFile);
 
-        return ResponseEntity.ok(service.validate(file));
+        return ResponseEntity.ok(service.validate(excelFile, rulesFile, fileType));
     }
 
     private void validateUploadFile(MultipartFile file){

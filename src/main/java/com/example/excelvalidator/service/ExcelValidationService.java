@@ -2,8 +2,9 @@ package com.example.excelvalidator.service;
 
 import com.example.excelvalidator.model.CellValidationError;
 import com.example.excelvalidator.model.ExcelValidationResponse;
-import com.example.excelvalidator.service.validator.SheetValidator;
-import org.apache.poi.ss.usermodel.DataFormatter;
+import com.example.excelvalidator.model.validation.v2.FileRuleConfig;
+import com.example.excelvalidator.model.validation.v2.ValidationConfig;
+import tools.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
@@ -16,18 +17,33 @@ import java.util.List;
 @Service
 public class ExcelValidationService {
 
-    private final List<SheetValidator> validators;
+    private final ObjectMapper mapper =
+            new ObjectMapper();
+
+    private final WorkbookRuleEngine workbookRuleEngine;
+    private final CellRuleEngine cellRuleEngine;
+    private final TableRuleEngine tableRuleEngine;
 
     public ExcelValidationService(
-            List<SheetValidator> validators
+            WorkbookRuleEngine workbookRuleEngine,
+            CellRuleEngine cellRuleEngine,
+            TableRuleEngine tableRuleEngine
     ) {
-        this.validators = validators;
+        this.workbookRuleEngine =
+                workbookRuleEngine;
+        this.cellRuleEngine = cellRuleEngine;
+        this.tableRuleEngine = tableRuleEngine;
     }
 
     public ExcelValidationResponse validate(
-            MultipartFile file
+            MultipartFile excelFile,
+            MultipartFile rulesFile,
+            String fileType
     ) {
-        List<String> sheets = new ArrayList<>();
+
+        List<String> sheets =
+                new ArrayList<>();
+
         List<CellValidationError> errors =
                 new ArrayList<>();
 
@@ -36,12 +52,29 @@ public class ExcelValidationService {
         try (
                 Workbook workbook =
                         WorkbookFactory.create(
-                                file.getInputStream()
+                                excelFile.getInputStream()
                         )
         ) {
 
-            DataFormatter formatter =
-                    new DataFormatter();
+            ValidationConfig config =
+                    mapper.readValue(
+                            rulesFile.getInputStream(),
+                            ValidationConfig.class
+                    );
+
+            FileRuleConfig fileConfig =
+                    findFileConfig(
+                            config,
+                            fileType
+                    );
+
+            if (fileConfig == null) {
+
+                throw new RuntimeException(
+                        "No configuration found for file type: "
+                                + fileType
+                );
+            }
 
             for (
                     int sheetIndex = 0;
@@ -50,31 +83,33 @@ public class ExcelValidationService {
             ) {
 
                 Sheet sheet =
-                        workbook.getSheetAt(sheetIndex);
-
-                sheets.add(sheet.getSheetName());
-
-                SheetValidator validator =
-                        findValidator(
-                                sheet.getSheetName()
+                        workbook.getSheetAt(
+                                sheetIndex
                         );
 
-                if (validator == null) {
-
-                    System.out.println(
-                            "No validator found for sheet: "
-                                    + sheet.getSheetName()
-                    );
-
-                    continue;
-                }
-
-                rowsChecked += validator.validate(
-                        sheet,
-                        formatter,
-                        errors
+                sheets.add(
+                        sheet.getSheetName()
                 );
             }
+
+            workbookRuleEngine
+                    .validateRequiredSheets(
+                            workbook,
+                            fileConfig,
+                            errors
+                    );
+
+            cellRuleEngine.validateCellRules(
+                    workbook,
+                    fileConfig.getCellRules(),
+                    errors
+            );
+
+            tableRuleEngine.validateTables(
+                    workbook,
+                    fileConfig.getTableRules(),
+                    errors
+            );
 
         } catch (Exception ex) {
 
@@ -85,7 +120,7 @@ public class ExcelValidationService {
         }
 
         return new ExcelValidationResponse(
-                file.getOriginalFilename(),
+                excelFile.getOriginalFilename(),
                 errors.isEmpty(),
                 rowsChecked,
                 errors.size(),
@@ -94,17 +129,18 @@ public class ExcelValidationService {
         );
     }
 
-    private SheetValidator findValidator(
-            String sheetName
+    private FileRuleConfig findFileConfig(
+            ValidationConfig config,
+            String fileType
     ) {
 
-        return validators.stream()
+        return config.getFiles()
+                .stream()
                 .filter(
-                        validator ->
-                                validator.sheetName()
-                                        .trim()
+                        file ->
+                                file.getFileType()
                                         .equalsIgnoreCase(
-                                                sheetName.trim()
+                                                fileType
                                         )
                 )
                 .findFirst()
