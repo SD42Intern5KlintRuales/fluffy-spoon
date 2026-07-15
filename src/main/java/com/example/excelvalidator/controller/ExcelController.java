@@ -1,6 +1,7 @@
 package com.example.excelvalidator.controller;
 
 import com.example.excelvalidator.model.ExcelValidationResponse;
+import com.example.excelvalidator.model.response.BatchValidationResponse;
 import com.example.excelvalidator.service.ExcelValidationService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Locale;
 
 @RestController
@@ -33,6 +35,20 @@ public class ExcelController {
         validateUploadFile(excelFile);
 
         return ResponseEntity.ok(service.validate(excelFile, rulesFile, fileType));
+    }
+
+    @PostMapping(
+            value = "/validate-batch",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<BatchValidationResponse> validateBatch(
+            @RequestParam("files")
+            List<MultipartFile> excelFiles,
+
+            @RequestParam("rules")
+            MultipartFile rulesFile
+    ) {
+        return ResponseEntity.ok(service.validateBatch(excelFiles, rulesFile));
     }
 
     private void validateUploadFile(MultipartFile file){
