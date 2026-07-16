@@ -9,6 +9,8 @@ import com.example.excelvalidator.model.validation.v2.ValidationConfig;
 import com.example.excelvalidator.model.response.FileValidationResult;
 import tools.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.Sheet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.springframework.stereotype.Service;
@@ -20,22 +22,26 @@ import java.util.List;
 @Service
 public class ExcelValidationService {
 
+        private static final Logger log = LoggerFactory.getLogger(ExcelValidationService.class);
+
     private final ObjectMapper mapper =
             new ObjectMapper();
 
     private final WorkbookRuleEngine workbookRuleEngine;
     private final CellRuleEngine cellRuleEngine;
     private final TableRuleEngine tableRuleEngine;
+        private final RuleExecutorRegistry ruleExecutorRegistry;
 
     public ExcelValidationService(
             WorkbookRuleEngine workbookRuleEngine,
             CellRuleEngine cellRuleEngine,
-            TableRuleEngine tableRuleEngine
+            TableRuleEngine tableRuleEngine,
+            RuleExecutorRegistry ruleExecutorRegistry
     ) {
-        this.workbookRuleEngine =
-                workbookRuleEngine;
+        this.workbookRuleEngine = workbookRuleEngine;
         this.cellRuleEngine = cellRuleEngine;
         this.tableRuleEngine = tableRuleEngine;
+        this.ruleExecutorRegistry = ruleExecutorRegistry;
     }
 
     public BatchValidationResponse validateBatch(
@@ -243,24 +249,21 @@ public class ExcelValidationService {
                 );
             }
 
-            workbookRuleEngine
-                    .validateRequiredSheets(
-                            workbook,
-                            fileConfig,
-                            errors
-                    );
+            // Execute configured rule sections via registry-driven executors
+            ruleExecutorRegistry
+                    .get("requiredSheets")
+                    .ifPresent(exec -> ((RuleExecutor<FileRuleConfig>) exec)
+                            .execute(workbook, fileConfig, errors));
 
-            cellRuleEngine.validateCellRules(
-                    workbook,
-                    fileConfig.getCellRules(),
-                    errors
-            );
+            ruleExecutorRegistry
+                    .get("cellRules")
+                    .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.CellRuleConfig>>) exec)
+                            .execute(workbook, fileConfig.getCellRules(), errors));
 
-            tableRuleEngine.validateTables(
-                    workbook,
-                    fileConfig.getTableRules(),
-                    errors
-            );
+            ruleExecutorRegistry
+                    .get("tableRules")
+                    .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.TableRuleConfig>>) exec)
+                            .execute(workbook, fileConfig.getTableRules(), errors));
 
         } catch (Exception ex) {
 
@@ -399,23 +402,27 @@ public class ExcelValidationService {
         List<CellValidationError> errors =
                 new ArrayList<>();
 
-        workbookRuleEngine.validateRequiredSheets(
-                workbook,
-                fileConfig,
-                errors
-        );
+        // Use registry-driven executors for consistency with configuration-driven flow
+        ruleExecutorRegistry
+                .get("requiredSheets")
+                .ifPresent(exec -> ((RuleExecutor<FileRuleConfig>) exec)
+                        .execute(workbook, fileConfig, errors));
 
-        cellRuleEngine.validateCellRules(
-                workbook,
-                fileConfig.getCellRules(),
-                errors
-        );
+        ruleExecutorRegistry
+                .get("cellRules")
+                .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.CellRuleConfig>>) exec)
+                        .execute(workbook, fileConfig.getCellRules(), errors));
 
-        tableRuleEngine.validateTables(
-                workbook,
-                fileConfig.getTableRules(),
-                errors
-        );
+        if (fileConfig.getTableRules() == null) {
+            log.debug("No tableRules configured for fileType={}", fileConfig.getFileType());
+        } else {
+            log.debug("Found {} tableRules for fileType={}", fileConfig.getTableRules().size(), fileConfig.getFileType());
+        }
+
+        ruleExecutorRegistry
+                .get("tableRules")
+                .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.TableRuleConfig>>) exec)
+                        .execute(workbook, fileConfig.getTableRules(), errors));
 
         int totalChecks =
                 calculateTotalChecks(

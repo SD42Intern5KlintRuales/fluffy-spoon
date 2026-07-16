@@ -1,0 +1,294 @@
+{
+  "configVersion": "1.0",
+  "lastUpdated": "2026-07-13",
+  "settings": {
+    "trimWhitespace": true,
+    "treatWhitespaceOnlyAsBlank": true,
+    "acceptPlaceholderValuesAsValid": true,
+    "placeholderExamples": [
+      "N/A",
+      "-",
+      "None"
+    ],
+    "notes": "Placeholder values like N/A or - are treated as valid, non-blank input. The tool never tries to guess intent beyond blank vs not-blank."
+  },
+  "validationTypes": {
+    "REQUIRED": "Cell must contain a non-blank value after trimming whitespace.",
+    "REQUIRED_DATE": "Cell must contain a non-blank value after trimming, and that value must parse as a valid date."
+  },
+  "files": [
+    {
+      "fileType": "RELEASE_NOTES",
+      "displayName": "Release Notes",
+      "requiredSheets": [
+        "ReleaseNote",
+        "Product_ReleaseCheckpoints",
+        "ReleaseDetailsHistory"
+      ],
+      "cellRules": [
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Project Name",
+          "cell": "E2",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Project Name"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Release Purpose",
+          "cell": "E3",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Release Purpose"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Release Date",
+          "cell": "E4",
+          "validationType": "REQUIRED_DATE",
+          "failMessage": "Missing or invalid date for Release Date"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Prepared By",
+          "cell": "L3",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Prepared By"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Confirmed By",
+          "cell": "O3",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Confirmed By"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Approved By",
+          "cell": "R3",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Approved By"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Branch Name",
+          "cell": "B12",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Branch Name"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Version",
+          "cell": "L12",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Version"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Changes",
+          "cell": "B14",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Changes"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Supported Languages",
+          "cell": "B16",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Supported Languages"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Supported Machine(s)/Environment(s)",
+          "cell": "B18",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Supported Machine(s)/Environment(s)"
+        },
+        {
+          "sheet": "ReleaseNote",
+          "fieldName": "Limitations",
+          "cell": "B20",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Limitations"
+        },
+        {
+          "sheet": "ReleaseDetailsHistory",
+          "fieldName": "Release Date",
+          "cell": "C3",
+          "validationType": "REQUIRED_DATE",
+          "failMessage": "Missing or invalid date for Release Date"
+        },
+        {
+          "sheet": "ReleaseDetailsHistory",
+          "fieldName": "Version",
+          "cell": "C4",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Version"
+        },
+        {
+          "sheet": "ReleaseDetailsHistory",
+          "fieldName": "Implemented function(s)/Fixed defect(s)",
+          "cell": "C5",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Implemented function(s)/Fixed defect(s)",
+          "note": "If content spans multiple rows (C5:C6), this checks only the first configured cell. See optional enhancement in requirements doc."
+        },
+        {
+          "sheet": "ReleaseDetailsHistory",
+          "fieldName": "Known defect(s)/limitation(s)",
+          "cell": "C7",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Known defect(s)/limitation(s)"
+        },
+        {
+          "sheet": "ReleaseDetailsHistory",
+          "fieldName": "Note(s)",
+          "cell": "C8",
+          "validationType": "REQUIRED",
+          "failMessage": "Missing required input for Note(s)"
+        }
+      ],
+      "tableRules": [
+        {
+          "sheet": "Product_ReleaseCheckpoints",
+          "tableName": "Release Checkpoints",
+          "startRow": 4,
+          "endCondition": {
+                "type": "ALL_FIELDS_BLANK",
+                "fields": [
+                    "Category",
+                    "Checkpoint",
+                    "Result"
+                ]
+            },
+          "columns": [
+            {
+              "fieldName": "Category",
+              "column": "B",
+              "required": false,
+              "remarks": "Required only for the first row of a category group. Blank category is allowed on subsequent rows within the same group."
+            },
+            {
+              "fieldName": "Checkpoint",
+              "column": "C",
+              "required": true,
+              "failMessage": "Missing Checkpoint description"
+            },
+            {
+              "fieldName": "Result",
+              "column": "D",
+              "required": true,
+              "failMessage": "Missing Result for this checkpoint"
+            }
+          ],
+          "rowValidationRules": [
+                {
+                    "type": "DEPENDENCY",
+                    "ifField": "Checkpoint",
+                    "requiredField": "Result",
+                    "message": "Result is required when Checkpoint is provided"
+                },
+                {
+                    "type": "DEPENDENCY",
+                    "ifField": "Result",
+                    "requiredField": "Checkpoint",
+                    "message": "Checkpoint is required when Result is provided"
+                },
+                {
+                    "type": "GROUP_HEADER_REQUIRED",
+                    "field": "Category",
+                    "dataFields": [
+                        "Checkpoint",
+                        "Result"
+                    ],
+                    "message": "Category is required for the first row of a group"
+                }
+            ]
+        }
+      ]
+    },
+    {
+      "fileType": "TEST_SPECIFICATION_RESULT",
+      "displayName": "Test Specification / Result",
+      "requiredSheets": [
+        "TestSpecification"
+      ],
+      "cellRules": [
+        {
+          "sheet": "TestSpecification",
+          "fieldName": "Project Name",
+          "cell": "B2",
+          "validationType": "REQUIRED"
+        },
+        {
+          "sheet": "TestSpecification",
+          "fieldName": "Test Target / Test Item",
+          "cell": "B3",
+          "validationType": "REQUIRED"
+        },
+        {
+          "sheet": "TestSpecification",
+          "fieldName": "Test Environment",
+          "cell": "B4",
+          "validationType": "REQUIRED"
+        },
+        {
+          "sheet": "TestSpecification",
+          "fieldName": "Test Date",
+          "cell": "B5",
+          "validationType": "REQUIRED_DATE"
+        },
+        {
+          "sheet": "TestSpecification",
+          "fieldName": "Tester",
+          "cell": "B6",
+          "validationType": "REQUIRED"
+        },
+        {
+          "sheet": "TestSpecification",
+          "fieldName": "Reviewer / Confirmed By",
+          "cell": "B7",
+          "validationType": "REQUIRED"
+        }
+      ],
+      "tableRules": [
+        {
+          "sheet": "TestSpecification",
+          "tableName": "Test Cases",
+          "startRow": 10,
+          "columns": [
+            {
+              "fieldName": "Test Case ID",
+              "column": "A",
+              "required": true
+            },
+            {
+              "fieldName": "Test Case Description",
+              "column": "B",
+              "required": true
+            },
+            {
+              "fieldName": "Expected Result",
+              "column": "C",
+              "required": true
+            },
+            {
+              "fieldName": "Actual Result",
+              "column": "D",
+              "required": true
+            },
+            {
+              "fieldName": "Test Result",
+              "column": "E",
+              "required": true
+            },
+            {
+              "fieldName": "Remarks / Notes",
+              "column": "F",
+              "required": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
