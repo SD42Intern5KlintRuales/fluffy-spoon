@@ -1,4 +1,4 @@
-package com.example.excelvalidator.service;
+package com.example.excelvalidator.service.engine;
 
 import com.example.excelvalidator.model.CellValidationError;
 import com.example.excelvalidator.model.validation.v2.RowValidationRuleConfig;
@@ -95,6 +95,10 @@ public class TableRuleEngine {
 
             Map<String, String> values =
                     new HashMap<>();
+
+            if (tableRule.getColumns() == null) {
+                continue;
+            }
 
             for (
                     TableColumnConfig columnConfig
@@ -348,13 +352,18 @@ public class TableRuleEngine {
             String fieldName
     ) {
 
+        if (fieldName == null || tableRule.getColumns() == null) {
+            return "";
+        }
+
         return tableRule.getColumns()
                 .stream()
                 .filter(
                         column ->
-                                fieldName.equalsIgnoreCase(
-                                        column.getFieldName()
-                                )
+                                column.getFieldName() != null
+                                        && column.getFieldName().equalsIgnoreCase(
+                                                fieldName
+                                        )
                 )
                 .map(
                         TableColumnConfig::getColumn

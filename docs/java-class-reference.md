@@ -16,14 +16,14 @@ This document enumerates the primary Java classes in the project with a short pu
   - `RuleExecutorRegistry`: [src/main/java/com/example/excelvalidator/service/RuleExecutorRegistry.java](src/main/java/com/example/excelvalidator/service/RuleExecutorRegistry.java#L1-L200) — Spring component that maps executor keys (e.g. `cellRules`, `tableRules`) to `RuleExecutor` implementations.
 
 - **Executor adapters**
-  - `WorkbookRuleExecutor`: [src/main/java/com/example/excelvalidator/service/WorkbookRuleExecutor.java](src/main/java/com/example/excelvalidator/service/WorkbookRuleExecutor.java#L1-L200) — adapter that delegates required-sheet checks to `WorkbookRuleEngine`.
-  - `CellRuleExecutor`: [src/main/java/com/example/excelvalidator/service/CellRuleExecutor.java](src/main/java/com/example/excelvalidator/service/CellRuleExecutor.java#L1-L200) — adapter that delegates cell checks to `CellRuleEngine`.
-  - `TableRuleExecutor`: [src/main/java/com/example/excelvalidator/service/TableRuleExecutor.java](src/main/java/com/example/excelvalidator/service/TableRuleExecutor.java#L1-L200) — adapter that delegates table checks to `TableRuleEngine`.
+  - `WorkbookRuleExecutor`: [src/main/java/com/example/excelvalidator/service/executor/WorkbookRuleExecutor.java](src/main/java/com/example/excelvalidator/service/executor/WorkbookRuleExecutor.java#L1-L200) — adapter that delegates required-sheet checks to `WorkbookRuleEngine`.
+  - `CellRuleExecutor`: [src/main/java/com/example/excelvalidator/service/executor/CellRuleExecutor.java](src/main/java/com/example/excelvalidator/service/executor/CellRuleExecutor.java#L1-L200) — adapter that delegates cell checks to `CellRuleEngine`.
+  - `TableRuleExecutor`: [src/main/java/com/example/excelvalidator/service/executor/TableRuleExecutor.java](src/main/java/com/example/excelvalidator/service/executor/TableRuleExecutor.java#L1-L200) — adapter that delegates table checks to `TableRuleEngine`.
 
 - **Engines (validation logic)**
-  - `WorkbookRuleEngine`: [src/main/java/com/example/excelvalidator/service/WorkbookRuleEngine.java](src/main/java/com/example/excelvalidator/service/WorkbookRuleEngine.java#L1-L200) — validates presence of required sheets.
-  - `CellRuleEngine`: [src/main/java/com/example/excelvalidator/service/CellRuleEngine.java](src/main/java/com/example/excelvalidator/service/CellRuleEngine.java#L1-L300) — validates single-cell rules such as `REQUIRED` and `REQUIRED_DATE`.
-  - `TableRuleEngine`: [src/main/java/com/example/excelvalidator/service/TableRuleEngine.java](src/main/java/com/example/excelvalidator/service/TableRuleEngine.java#L1-L500) — validates tables (rows) using `TableRuleConfig` and row-validation rules; includes fallback to find first non-empty row when `startRow` is past sheet end.
+  - `WorkbookRuleEngine`: [src/main/java/com/example/excelvalidator/service/engine/WorkbookRuleEngine.java](src/main/java/com/example/excelvalidator/service/engine/WorkbookRuleEngine.java#L1-L200) — validates presence of required sheets.
+  - `CellRuleEngine`: [src/main/java/com/example/excelvalidator/service/engine/CellRuleEngine.java](src/main/java/com/example/excelvalidator/service/engine/CellRuleEngine.java#L1-L300) — validates single-cell rules such as `REQUIRED` and `REQUIRED_DATE`.
+  - `TableRuleEngine`: [src/main/java/com/example/excelvalidator/service/engine/TableRuleEngine.java](src/main/java/com/example/excelvalidator/service/engine/TableRuleEngine.java#L1-L500) — validates tables (rows) using `TableRuleConfig` and row-validation rules; includes fallback to find first non-empty row when `startRow` is past sheet end.
   - `JsonRuleEngine`: [src/main/java/com/example/excelvalidator/service/JsonRuleEngine.java](src/main/java/com/example/excelvalidator/service/JsonRuleEngine.java#L1-L400) — legacy engine that validates sheet/column rules defined by the older JSON model (v1).
 
 - **Models / DTOs**

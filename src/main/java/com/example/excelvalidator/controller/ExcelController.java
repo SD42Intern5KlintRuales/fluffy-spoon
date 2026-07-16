@@ -42,12 +42,20 @@ public class ExcelController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<BatchValidationResponse> validateBatch(
-            @RequestParam("files")
+            @RequestParam("excelFiles")
             List<MultipartFile> excelFiles,
 
-            @RequestParam("rules")
+            @RequestParam("rulesFile")
             MultipartFile rulesFile
     ) {
+        if (excelFiles == null || excelFiles.isEmpty()) {
+            throw new IllegalArgumentException("Please upload at least one Excel file.");
+        }
+
+        if (rulesFile == null || rulesFile.isEmpty()) {
+            throw new IllegalArgumentException("Please upload a rules file.");
+        }
+
         return ResponseEntity.ok(service.validateBatch(excelFiles, rulesFile));
     }
 

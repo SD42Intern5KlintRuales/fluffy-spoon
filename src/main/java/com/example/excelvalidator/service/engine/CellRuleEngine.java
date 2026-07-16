@@ -1,4 +1,4 @@
-package com.example.excelvalidator.service;
+package com.example.excelvalidator.service.engine;
 
 import com.example.excelvalidator.model.CellValidationError;
 import com.example.excelvalidator.model.validation.v2.CellRuleConfig;

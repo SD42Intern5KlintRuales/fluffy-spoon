@@ -7,6 +7,9 @@ import com.example.excelvalidator.model.response.FileMatchResult;
 import com.example.excelvalidator.model.validation.v2.FileRuleConfig;
 import com.example.excelvalidator.model.validation.v2.ValidationConfig;
 import com.example.excelvalidator.model.response.FileValidationResult;
+import com.example.excelvalidator.service.engine.CellRuleEngine;
+import com.example.excelvalidator.service.engine.TableRuleEngine;
+import com.example.excelvalidator.service.engine.WorkbookRuleEngine;
 import tools.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.slf4j.Logger;
@@ -30,7 +33,7 @@ public class ExcelValidationService {
     private final WorkbookRuleEngine workbookRuleEngine;
     private final CellRuleEngine cellRuleEngine;
     private final TableRuleEngine tableRuleEngine;
-        private final RuleExecutorRegistry ruleExecutorRegistry;
+    private final RuleExecutorRegistry ruleExecutorRegistry;
 
     public ExcelValidationService(
             WorkbookRuleEngine workbookRuleEngine,
@@ -56,6 +59,13 @@ public class ExcelValidationService {
                             rulesFile.getInputStream(),
                             ValidationConfig.class
                     );
+
+            if (config == null || config.getFiles() == null || config.getFiles().isEmpty()) {
+                return buildConfigErrorResponse(
+                        files,
+                        "Validation configuration error: the rules JSON is invalid or incomplete. Please provide a valid 'files' array and ensure required rule fields are not null."
+                );
+            }
 
             List<FileValidationResult> results =
                     new ArrayList<>();
@@ -536,6 +546,39 @@ public class ExcelValidationService {
         return result;
     }
 
+    private BatchValidationResponse buildConfigErrorResponse(
+            List<MultipartFile> files,
+            String message
+    ) {
+        BatchValidationResponse response = new BatchValidationResponse();
+        List<FileValidationResult> results = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            FileValidationResult result = new FileValidationResult();
+            result.setFileName(file.getOriginalFilename());
+            result.setStatus("ERROR");
+            result.setValid(false);
+            result.setErrorCount(1);
+            result.setTotalChecks(1);
+            result.setPassedChecks(0);
+            result.setFailedChecks(1);
+            result.setErrors(new ArrayList<>());
+            result.setMessage(message);
+            results.add(result);
+        }
+
+        response.setFilesChecked(files.size());
+        response.setPassedFiles(0);
+        response.setFailedFiles(files.size());
+        response.setTotalChecks(files.size());
+        response.setPassedChecks(0);
+        response.setFailedChecks(files.size());
+        response.setOverallStatus("FAILED");
+        response.setResults(results);
+
+        return response;
+    }
+
     private FileValidationResult buildErrorResult(
             String fileName,
             Exception ex
@@ -578,7 +621,9 @@ public class ExcelValidationService {
 
         result.setMessage(
                 ex.getMessage() != null
-                        ? ex.getMessage()
+                        ? (ex.getMessage().contains("The supplied file was empty")
+                                ? "The uploaded file is empty. Please upload a valid Excel file."
+                                : "Validation configuration error: invalid rule data provided. Please fix the rules JSON file and try again.")
                         : "Unexpected validation error"
         );
 

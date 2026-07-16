@@ -1,42 +1,33 @@
 ```mermaid
-classDiagram
-    ExcelController --> ExcelValidationService : uses
-    ExcelValidationService --> RuleExecutorRegistry : looks up
-    RuleExecutorRegistry --> RuleExecutor
-    RuleExecutor <|-- WorkbookRuleExecutor
-    RuleExecutor <|-- CellRuleExecutor
-    RuleExecutor <|-- TableRuleExecutor
-    WorkbookRuleExecutor --> WorkbookRuleEngine : delegates
-    CellRuleExecutor --> CellRuleEngine : delegates
-    TableRuleExecutor --> TableRuleEngine : delegates
-    TableRuleEngine --> TableRuleConfig
-    TableRuleEngine --> TableColumnConfig
-    ExcelValidationService --> ValidationConfig
-    ValidationConfig --> FileRuleConfig
-    FileRuleConfig --> CellRuleConfig
-    FileRuleConfig --> TableRuleConfig
-    ExcelValidationService --> FileValidationResult
-    FileValidationResult --> CellValidationError
-    BatchValidationResponse --> FileValidationResult
+graph TD
+    subgraph API Layer
+        A[ExcelController] --> B[ExcelValidationService]
+    end
 
-    class ExcelValidationService{
-        +validate(file, rules, fileType)
-        +validateBatch(files, rulesFile)
-    }
+    subgraph Rule Execution Layer
+        B --> C[RuleExecutorRegistry]
+        C --> D[RuleExecutor]
+        D --> E[WorkbookRuleExecutor]
+        D --> F[CellRuleExecutor]
+        D --> G[TableRuleExecutor]
+    end
 
-    class RuleExecutorRegistry{
-        +get(key)
-    }
+    subgraph Engine Layer
+        E --> H[WorkbookRuleEngine]
+        F --> I[CellRuleEngine]
+        G --> J[TableRuleEngine]
+    end
 
-    class CellRuleEngine{
-        +validateCellRules(workbook, rules, errors)
-    }
+    subgraph Model Layer
+        B --> K[ValidationConfig]
+        K --> L[FileRuleConfig]
+        L --> M[CellRuleConfig]
+        L --> N[TableRuleConfig]
+        B --> O[FileValidationResult]
+        O --> P[CellValidationError]
+        Q[BatchValidationResponse] --> O
+    end
 
-    class TableRuleEngine{
-        +validateTables(workbook, tableRules, errors)
-    }
-
-    class WorkbookRuleEngine{
-        +validateRequiredSheets(workbook, fileConfig, errors)
-    }
+    classDef layer fill:#eef5ff,stroke:#5b8cff,stroke-width:1px;
+    class A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q layer;
 ```

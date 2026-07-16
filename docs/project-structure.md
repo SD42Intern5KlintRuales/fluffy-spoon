@@ -10,7 +10,15 @@ This project organizes Java classes and models by role, with a clear separation 
 
 - `com.example.excelvalidator.service`
   - Business logic and orchestration.
-  - Key classes: `ExcelValidationService`, `RuleExecutorRegistry`, `RuleExecutor`, executor adapters, and validation engines.
+  - Key classes: `ExcelValidationService`, `RuleExecutorRegistry`, and `RuleExecutor`.
+
+- `com.example.excelvalidator.service.executor`
+  - Adapter classes that map rule sections to validation engines.
+  - Key classes: `WorkbookRuleExecutor`, `CellRuleExecutor`, `TableRuleExecutor`.
+
+- `com.example.excelvalidator.service.engine`
+  - Core validation logic implementations.
+  - Key classes: `WorkbookRuleEngine`, `CellRuleEngine`, `TableRuleEngine`.
 
 - `com.example.excelvalidator.model`
   - DTOs and response types.
@@ -23,6 +31,20 @@ This project organizes Java classes and models by role, with a clear separation 
 - `com.example.excelvalidator.model.validation`
   - Legacy rule configuration model.
   - Key classes: `ValidationConfig`, `SheetRuleConfig`, `ColumnRuleConfig`, `RuleConfig`.
+
+## Architecture Layers
+
+This project is organized into explicit layers for clarity and maintainability:
+
+- **API layer**
+  - `ExcelController` receives requests and forwards them to `ExcelValidationService`.
+- **Rule execution layer**
+  - `RuleExecutorRegistry` dispatches configured validation sections to the appropriate executor adapters.
+  - `WorkbookRuleExecutor`, `CellRuleExecutor`, and `TableRuleExecutor` adapt active configuration sections into engine invocations.
+- **Engine layer**
+  - `WorkbookRuleEngine`, `CellRuleEngine`, and `TableRuleEngine` contain the actual validation logic.
+- **Model layer**
+  - Validation config models, response DTOs, and legacy schema support.
 
 ## Why `model.validation.v2` exists
 
@@ -39,7 +61,7 @@ If you want to clean the project further, you can delete `model.validation` once
 1. Keep `model.validation.v2` as the active schema.
 2. Keep `model.validation` only while legacy support is still needed.
 3. Add a short note in `README.md` explaining that v1 is legacy and v2 is current.
-4. Optionally move executor classes into `service/executor` and engines into `service/engine` for clearer separation.
+4. Executor classes are in `service/executor` and engines are in `service/engine` for clearer separation.
 
 ## Visual structure
 
@@ -50,13 +72,15 @@ If you want to clean the project further, you can delete `model.validation` once
     - `ExcelValidationService.java`
     - `RuleExecutor.java`
     - `RuleExecutorRegistry.java`
-    - `WorkbookRuleExecutor.java`
-    - `CellRuleExecutor.java`
-    - `TableRuleExecutor.java`
-    - `WorkbookRuleEngine.java`
-    - `CellRuleEngine.java`
-    - `TableRuleEngine.java`
     - `JsonRuleEngine.java`
+    - `executor/`
+      - `WorkbookRuleExecutor.java`
+      - `CellRuleExecutor.java`
+      - `TableRuleExecutor.java`
+    - `engine/`
+      - `WorkbookRuleEngine.java`
+      - `CellRuleEngine.java`
+      - `TableRuleEngine.java`
   - `model/`
     - `CellValidationError.java`
     - `ExcelValidationResponse.java`
