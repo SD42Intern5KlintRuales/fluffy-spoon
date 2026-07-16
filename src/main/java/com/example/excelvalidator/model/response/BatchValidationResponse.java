@@ -1,7 +1,20 @@
 package com.example.excelvalidator.model.response;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+@JsonPropertyOrder({
+        "fileName",
+        "fileType",
+        "overallStatus",
+        "filesChecked",
+        "passedFiles",
+        "failedFiles",
+        "totalChecks",
+        "passedChecks",
+        "failedChecks",
+        "results"
+})
 public class BatchValidationResponse {
 
     private String overallStatus;

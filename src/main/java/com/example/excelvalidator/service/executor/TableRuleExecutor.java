@@ -28,13 +28,13 @@ public class TableRuleExecutor implements RuleExecutor<List<TableRuleConfig>> {
     }
 
     @Override
-    public void execute(Workbook workbook, List<TableRuleConfig> ruleObject, List<CellValidationError> errors) {
+    public void execute(Workbook workbook, List<TableRuleConfig> ruleObject, List<CellValidationError> errors, List<CellValidationError> passedFields) {
         if (ruleObject == null) {
             return;
         }
 
         log.debug("Executing TableRuleExecutor for {} table rules", ruleObject.size());
 
-        tableRuleEngine.validateTables(workbook, ruleObject, errors);
+        tableRuleEngine.validateTables(workbook, ruleObject, errors, passedFields);
     }
 }

@@ -21,7 +21,8 @@ public class TableRuleEngine {
     public void validateTables(
             Workbook workbook,
             List<TableRuleConfig> tableRules,
-            List<CellValidationError> errors
+            List<CellValidationError> errors,
+            List<CellValidationError> passedFields
     ) {
 
         if (tableRules == null) {
@@ -33,7 +34,8 @@ public class TableRuleEngine {
             validateTable(
                     workbook,
                     tableRule,
-                    errors
+                    errors,
+                    passedFields
             );
         }
     }
@@ -41,7 +43,8 @@ public class TableRuleEngine {
     private void validateTable(
             Workbook workbook,
             TableRuleConfig tableRule,
-            List<CellValidationError> errors
+            List<CellValidationError> errors,
+            List<CellValidationError> passedFields
     ) {
 
         Sheet sheet =
@@ -125,19 +128,30 @@ public class TableRuleEngine {
                         Boolean.TRUE.equals(
                                 columnConfig.getRequired()
                         )
-                                && value.isBlank()
                 ) {
-
-                    errors.add(
-                            new CellValidationError(
-                                    sheet.getSheetName(),
-                                    rowIndex + 1,
-                                    columnConfig.getColumn(),
-                                    columnConfig.getFieldName(),
-                                    value,
-                                    columnConfig.getFailMessage()
-                            )
-                    );
+                    if (value.isBlank()) {
+                        errors.add(
+                                new CellValidationError(
+                                        sheet.getSheetName(),
+                                        rowIndex + 1,
+                                        columnConfig.getColumn(),
+                                        columnConfig.getFieldName(),
+                                        value,
+                                        columnConfig.getFailMessage() != null ? columnConfig.getFailMessage() : "Missing or invalid value for " + columnConfig.getFieldName()
+                                )
+                        );
+                    } else {
+                        passedFields.add(
+                                new CellValidationError(
+                                        sheet.getSheetName(),
+                                        rowIndex + 1,
+                                        columnConfig.getColumn(),
+                                        columnConfig.getFieldName(),
+                                        value,
+                                        "Field has value"
+                                )
+                        );
+                    }
                 }
             }
 
@@ -157,7 +171,8 @@ public class TableRuleEngine {
                             currentCategory,
                             sheet.getSheetName(),
                             rowIndex,
-                            errors
+                            errors,
+                            passedFields
                     );
         }
     }
@@ -168,7 +183,8 @@ public class TableRuleEngine {
             String currentCategory,
             String sheetName,
             int rowIndex,
-            List<CellValidationError> errors
+            List<CellValidationError> errors,
+            List<CellValidationError> passedFields
     ) {
 
         if (tableRule.getRowValidationRules() == null) {
@@ -202,22 +218,36 @@ public class TableRuleEngine {
 
                 if (
                         !triggerValue.isBlank()
-                                && requiredValue.isBlank()
                 ) {
-
-                    errors.add(
-                            new CellValidationError(
-                                    sheetName,
-                                    rowIndex + 1,
-                                    findColumn(
-                                            tableRule,
-                                            rule.getRequiredField()
-                                    ),
-                                    rule.getRequiredField(),
-                                    requiredValue,
-                                    rule.getMessage()
-                            )
-                    );
+                    if (requiredValue.isBlank()) {
+                        errors.add(
+                                new CellValidationError(
+                                        sheetName,
+                                        rowIndex + 1,
+                                        findColumn(
+                                                tableRule,
+                                                rule.getRequiredField()
+                                        ),
+                                        rule.getRequiredField(),
+                                        requiredValue,
+                                        rule.getMessage() != null ? rule.getMessage() : "Missing dependent value for " + rule.getRequiredField()
+                                )
+                        );
+                    } else {
+                        passedFields.add(
+                                new CellValidationError(
+                                        sheetName,
+                                        rowIndex + 1,
+                                        findColumn(
+                                                tableRule,
+                                                rule.getRequiredField()
+                                        ),
+                                        rule.getRequiredField(),
+                                        requiredValue,
+                                        "Field has value"
+                                )
+                        );
+                    }
                 }
             }
 
@@ -285,7 +315,21 @@ public class TableRuleEngine {
                                     ),
                                     rule.getField(),
                                     category,
-                                    rule.getMessage()
+                                    rule.getMessage() != null ? rule.getMessage() : "Missing category for " + rule.getField()
+                            )
+                    );
+                } else if (rowHasData && (!category.isBlank() || !currentCategory.isBlank())) {
+                    passedFields.add(
+                            new CellValidationError(
+                                    sheetName,
+                                    rowIndex + 1,
+                                    findColumn(
+                                            tableRule,
+                                            rule.getField()
+                                    ),
+                                    rule.getField(),
+                                    category.isBlank() ? currentCategory : category,
+                                    "Field has value"
                             )
                     );
                 }

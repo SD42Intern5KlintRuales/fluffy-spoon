@@ -13,7 +13,8 @@ public class WorkbookRuleEngine {
     public void validateRequiredSheets(
             Workbook workbook,
             FileRuleConfig fileConfig,
-            List<CellValidationError> errors
+            List<CellValidationError> errors,
+            List<CellValidationError> passedFields
     ) {
 
         for (String requiredSheet :
@@ -32,6 +33,17 @@ public class WorkbookRuleEngine {
                                 requiredSheet,
                                 "",
                                 "Required sheet is missing"
+                        )
+                );
+            } else {
+                passedFields.add(
+                        new CellValidationError(
+                                "Workbook",
+                                0,
+                                "",
+                                requiredSheet,
+                                "",
+                                "Required sheet is present"
                         )
                 );
             }

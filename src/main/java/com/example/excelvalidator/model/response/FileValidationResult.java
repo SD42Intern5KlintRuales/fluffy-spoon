@@ -3,7 +3,20 @@ package com.example.excelvalidator.model.response;
 import com.example.excelvalidator.model.CellValidationError;
 
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+@JsonPropertyOrder({
+        "fileName",
+        "fileType",
+        "status",
+        "valid",
+        "message",
+        "totalChecks",
+        "passedChecks",
+        "failedChecks",
+        "sheetValidations",
+        "fieldValidations"
+})
 public class FileValidationResult {
 
     private String fileType;
@@ -19,11 +32,12 @@ public class FileValidationResult {
     private int passedChecks;
 
     private int failedChecks;
-    private int errorCount;
 
     private String message;
 
-    private List<CellValidationError> errors;
+    private SheetValidationSummary sheetValidations;
+
+    private FieldValidationSummary fieldValidations;
 
     public String getFileType() {
         return fileType;
@@ -65,24 +79,12 @@ public class FileValidationResult {
         this.valid = valid;
     }
 
-    public int getErrorCount() {
-        return errorCount;
+    public SheetValidationSummary getSheetValidations() {
+        return sheetValidations;
     }
 
-    public void setErrorCount(
-            int errorCount
-    ) {
-        this.errorCount = errorCount;
-    }
-
-    public List<CellValidationError> getErrors() {
-        return errors;
-    }
-
-    public void setErrors(
-            List<CellValidationError> errors
-    ) {
-        this.errors = errors;
+    public void setSheetValidations(SheetValidationSummary sheetValidations) {
+        this.sheetValidations = sheetValidations;
     }
 
     public String getMessage() {
@@ -91,6 +93,14 @@ public class FileValidationResult {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public FieldValidationSummary getFieldValidations() {
+        return fieldValidations;
+    }
+
+    public void setFieldValidations(FieldValidationSummary fieldValidations) {
+        this.fieldValidations = fieldValidations;
     }
     public int getTotalChecks() {
         return totalChecks;

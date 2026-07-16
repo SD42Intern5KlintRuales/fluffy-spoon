@@ -17,7 +17,8 @@ public class CellRuleEngine {
     public void validateCellRules(
             Workbook workbook,
             List<CellRuleConfig> rules,
-            List<CellValidationError> errors
+            List<CellValidationError> errors,
+            List<CellValidationError> passedFields
     ){
         DataFormatter formatter = new DataFormatter();
 
@@ -33,7 +34,8 @@ public class CellRuleEngine {
                     sheet,
                     rule,
                     formatter,
-                    errors
+                    errors,
+                    passedFields
             );
         }
     }
@@ -42,7 +44,8 @@ public class CellRuleEngine {
             Sheet sheet,
             CellRuleConfig rule,
             DataFormatter formatter,
-            List<CellValidationError> errors
+            List<CellValidationError> errors,
+            List<CellValidationError> passedFields
     ) {
         String cellAddress = rule.getCell();
 
@@ -71,7 +74,8 @@ public class CellRuleEngine {
                 rule,
                 value,
                 cell,
-                errors
+                errors,
+                passedFields
         );
     }
 
@@ -81,7 +85,8 @@ public class CellRuleEngine {
             CellRuleConfig rule,
             String value,
             Cell cell,
-            List<CellValidationError> errors
+            List<CellValidationError> errors,
+            List<CellValidationError> passedFields
     ){
         if(
                 "REQUIRED".equalsIgnoreCase(
@@ -96,7 +101,18 @@ public class CellRuleEngine {
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,
-                                rule.getFailMessage()
+                                rule.getFailMessage() != null ? rule.getFailMessage() : "Missing or invalid value for " + rule.getFieldName()
+                        )
+                );
+            } else {
+                passedFields.add(
+                        new CellValidationError(
+                                sheet.getSheetName(),
+                                ref.getRow() + 1,
+                                rule.getCell(),
+                                rule.getFieldName(),
+                                value,
+                                "Field has value"
                         )
                 );
             }
@@ -111,7 +127,7 @@ public class CellRuleEngine {
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,
-                                rule.getFailMessage()
+                                rule.getFailMessage() != null ? rule.getFailMessage() : "Missing or invalid value for " + rule.getFieldName()
                         )
                 );
                 return;
@@ -134,7 +150,18 @@ public class CellRuleEngine {
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,
-                                rule.getFailMessage()
+                                rule.getFailMessage() != null ? rule.getFailMessage() : "Missing or invalid value for " + rule.getFieldName()
+                        )
+                );
+            } else {
+                passedFields.add(
+                        new CellValidationError(
+                                sheet.getSheetName(),
+                                ref.getRow() + 1,
+                                rule.getCell(),
+                                rule.getFieldName(),
+                                value,
+                                "Field has valid date"
                         )
                 );
             }

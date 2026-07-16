@@ -24,11 +24,11 @@ public class WorkbookRuleExecutor implements RuleExecutor<FileRuleConfig> {
     }
 
     @Override
-    public void execute(Workbook workbook, FileRuleConfig ruleObject, List<CellValidationError> errors) {
+    public void execute(Workbook workbook, FileRuleConfig ruleObject, List<CellValidationError> errors, List<CellValidationError> passedFields) {
         if (ruleObject == null) {
             return;
         }
 
-        workbookRuleEngine.validateRequiredSheets(workbook, ruleObject, errors);
+        workbookRuleEngine.validateRequiredSheets(workbook, ruleObject, errors, passedFields);
     }
 }

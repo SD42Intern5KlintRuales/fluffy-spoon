@@ -9,7 +9,7 @@ public interface RuleExecutor<T> {
 
     String getKey();
 
-    void execute(Workbook workbook, T ruleObject, List<CellValidationError> errors);
+    void execute(Workbook workbook, T ruleObject, List<CellValidationError> errors, List<CellValidationError> passedFields);
 
     default int estimateChecks(T ruleObject) {
         return 0;

@@ -6,8 +6,10 @@ public record ExcelValidationResponse(
         String fileName,
         boolean valid,
         int rowsChecked,
-        int errorCount,
+        int failedChecks,
+        int passedChecks,
         List<String> sheets,
+        List<CellValidationError> passedFields,
         List<CellValidationError> errors
 ) {
 }

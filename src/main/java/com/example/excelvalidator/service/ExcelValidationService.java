@@ -214,6 +214,9 @@ public class ExcelValidationService {
         List<CellValidationError> errors =
                 new ArrayList<>();
 
+        List<CellValidationError> passedFields =
+                new ArrayList<>();
+
         int rowsChecked = 0;
 
         try (
@@ -263,17 +266,17 @@ public class ExcelValidationService {
             ruleExecutorRegistry
                     .get("requiredSheets")
                     .ifPresent(exec -> ((RuleExecutor<FileRuleConfig>) exec)
-                            .execute(workbook, fileConfig, errors));
+                            .execute(workbook, fileConfig, errors, passedFields));
 
             ruleExecutorRegistry
                     .get("cellRules")
                     .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.CellRuleConfig>>) exec)
-                            .execute(workbook, fileConfig.getCellRules(), errors));
+                            .execute(workbook, fileConfig.getCellRules(), errors, passedFields));
 
             ruleExecutorRegistry
                     .get("tableRules")
                     .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.TableRuleConfig>>) exec)
-                            .execute(workbook, fileConfig.getTableRules(), errors));
+                            .execute(workbook, fileConfig.getTableRules(), errors, passedFields));
 
         } catch (Exception ex) {
 
@@ -288,7 +291,9 @@ public class ExcelValidationService {
                 errors.isEmpty(),
                 rowsChecked,
                 errors.size(),
+                passedFields.size(),
                 sheets,
+                passedFields,
                 errors
         );
     }
@@ -412,16 +417,19 @@ public class ExcelValidationService {
         List<CellValidationError> errors =
                 new ArrayList<>();
 
+        List<CellValidationError> passedFields =
+                new ArrayList<>();
+
         // Use registry-driven executors for consistency with configuration-driven flow
         ruleExecutorRegistry
                 .get("requiredSheets")
                 .ifPresent(exec -> ((RuleExecutor<FileRuleConfig>) exec)
-                        .execute(workbook, fileConfig, errors));
+                        .execute(workbook, fileConfig, errors, passedFields));
 
         ruleExecutorRegistry
                 .get("cellRules")
                 .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.CellRuleConfig>>) exec)
-                        .execute(workbook, fileConfig.getCellRules(), errors));
+                        .execute(workbook, fileConfig.getCellRules(), errors, passedFields));
 
         if (fileConfig.getTableRules() == null) {
             log.debug("No tableRules configured for fileType={}", fileConfig.getFileType());
@@ -432,21 +440,16 @@ public class ExcelValidationService {
         ruleExecutorRegistry
                 .get("tableRules")
                 .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.TableRuleConfig>>) exec)
-                        .execute(workbook, fileConfig.getTableRules(), errors));
-
-        int totalChecks =
-                calculateTotalChecks(
-                        fileConfig
-                );
+                        .execute(workbook, fileConfig.getTableRules(), errors, passedFields));
 
         int failedChecks =
                 errors.size();
 
         int passedChecks =
-                Math.max(
-                        0,
-                        totalChecks - failedChecks
-                );
+                passedFields.size();
+
+        int totalChecks =
+                failedChecks + passedChecks;
 
         result.setFileName(
                 fileName
@@ -456,9 +459,38 @@ public class ExcelValidationService {
                 fileConfig.getFileType()
         );
 
-        result.setErrors(
-                errors
-        );
+        // Separate sheet validations and field validations
+        java.util.List<String> presentSheets = passedFields.stream()
+                .filter(e -> "Workbook".equals(e.sheet()))
+                .map(CellValidationError::field)
+                .collect(java.util.stream.Collectors.toList());
+        
+        java.util.List<String> missingSheets = errors.stream()
+                .filter(e -> "Workbook".equals(e.sheet()))
+                .map(CellValidationError::field)
+                .collect(java.util.stream.Collectors.toList());
+
+        com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
+        sheetValidations.setSheetsChecked(fileConfig.getRequiredSheets() != null ? fileConfig.getRequiredSheets().size() : 0);
+        sheetValidations.setPresentSheets(presentSheets);
+        sheetValidations.setMissingSheets(missingSheets);
+
+        java.util.List<CellValidationError> fieldPassed = passedFields.stream()
+                .filter(e -> !"Workbook".equals(e.sheet()))
+                .collect(java.util.stream.Collectors.toList());
+                
+        java.util.List<CellValidationError> fieldFailed = errors.stream()
+                .filter(e -> !"Workbook".equals(e.sheet()))
+                .collect(java.util.stream.Collectors.toList());
+
+        com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
+        fieldValidations.setPassedFieldChecks(fieldPassed.size());
+        fieldValidations.setFailedFieldChecks(fieldFailed.size());
+        fieldValidations.setPassedFields(fieldPassed);
+        fieldValidations.setFailedFields(fieldFailed);
+
+        result.setSheetValidations(sheetValidations);
+        result.setFieldValidations(fieldValidations);
 
         result.setTotalChecks(
                 totalChecks
@@ -469,10 +501,6 @@ public class ExcelValidationService {
         );
 
         result.setFailedChecks(
-                failedChecks
-        );
-
-        result.setErrorCount(
                 failedChecks
         );
 
@@ -515,10 +543,6 @@ public class ExcelValidationService {
                 false
         );
 
-        result.setErrorCount(
-                1
-        );
-
         result.setTotalChecks(
                 1
         );
@@ -531,9 +555,19 @@ public class ExcelValidationService {
                 1
         );
 
-        result.setErrors(
-                new ArrayList<>()
-        );
+        com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
+        sheetValidations.setSheetsChecked(missingSheets.size());
+        sheetValidations.setPresentSheets(new ArrayList<>());
+        sheetValidations.setMissingSheets(missingSheets);
+
+        com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
+        fieldValidations.setPassedFieldChecks(0);
+        fieldValidations.setFailedFieldChecks(0);
+        fieldValidations.setPassedFields(new ArrayList<>());
+        fieldValidations.setFailedFields(new ArrayList<>());
+
+        result.setSheetValidations(sheetValidations);
+        result.setFieldValidations(fieldValidations);
 
         result.setMessage(
                 "This workbook does not match any configured validation template. "
@@ -555,11 +589,22 @@ public class ExcelValidationService {
             result.setFileName(file.getOriginalFilename());
             result.setStatus("ERROR");
             result.setValid(false);
-            result.setErrorCount(1);
             result.setTotalChecks(1);
             result.setPassedChecks(0);
             result.setFailedChecks(1);
-            result.setErrors(new ArrayList<>());
+            com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
+            sheetValidations.setSheetsChecked(0);
+            sheetValidations.setPresentSheets(new ArrayList<>());
+            sheetValidations.setMissingSheets(new ArrayList<>());
+
+            com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
+            fieldValidations.setPassedFieldChecks(0);
+            fieldValidations.setFailedFieldChecks(0);
+            fieldValidations.setPassedFields(new ArrayList<>());
+            fieldValidations.setFailedFields(new ArrayList<>());
+
+            result.setSheetValidations(sheetValidations);
+            result.setFieldValidations(fieldValidations);
             result.setMessage(message);
             results.add(result);
         }
@@ -596,10 +641,6 @@ public class ExcelValidationService {
                 false
         );
 
-        result.setErrorCount(
-                1
-        );
-
         result.setTotalChecks(
                 1
         );
@@ -612,9 +653,19 @@ public class ExcelValidationService {
                 1
         );
 
-        result.setErrors(
-                new ArrayList<>()
-        );
+        com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
+        sheetValidations.setSheetsChecked(0);
+        sheetValidations.setPresentSheets(new ArrayList<>());
+        sheetValidations.setMissingSheets(new ArrayList<>());
+
+        com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
+        fieldValidations.setPassedFieldChecks(0);
+        fieldValidations.setFailedFieldChecks(0);
+        fieldValidations.setPassedFields(new ArrayList<>());
+        fieldValidations.setFailedFields(new ArrayList<>());
+
+        result.setSheetValidations(sheetValidations);
+        result.setFieldValidations(fieldValidations);
 
         result.setMessage(
                 ex.getMessage() != null
@@ -625,44 +676,5 @@ public class ExcelValidationService {
         );
 
         return result;
-    }
-
-    private int calculateTotalChecks(
-            FileRuleConfig fileConfig
-    ) {
-
-        int totalChecks = 0;
-
-        if (
-                fileConfig.getRequiredSheets()
-                        != null
-        ) {
-
-            totalChecks +=
-                    fileConfig.getRequiredSheets()
-                            .size();
-        }
-
-        if (
-                fileConfig.getCellRules()
-                        != null
-        ) {
-
-            totalChecks +=
-                    fileConfig.getCellRules()
-                            .size();
-        }
-
-        if (
-                fileConfig.getTableRules()
-                        != null
-        ) {
-
-            totalChecks +=
-                    fileConfig.getTableRules()
-                            .size();
-        }
-
-        return totalChecks;
     }
 }

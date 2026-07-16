@@ -67,7 +67,7 @@ public class ExcelValidationTableFailureTest {
             assertThat(resp.valid()).isFalse();
 
             // Expect 5 required columns (A-E) to be flagged for the single table row
-            assertThat(resp.errorCount()).isEqualTo(resp.errors().size());
+            assertThat(resp.failedChecks()).isEqualTo(resp.errors().size());
             List<String> cols = resp.errors().stream().map(CellValidationError::column).collect(Collectors.toList());
             // Verify at least A-E were reported
             assertThat(cols).contains("A", "B", "C", "D", "E");
