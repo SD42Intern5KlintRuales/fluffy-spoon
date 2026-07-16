@@ -536,11 +536,8 @@ public class ExcelValidationService {
         );
 
         result.setMessage(
-                "Missing required sheets: "
-                        + String.join(
-                        ", ",
-                        missingSheets
-                )
+                "This workbook does not match any configured validation template. "
+                        + "Add or update its rules in the validation JSON before retrying."
         );
 
         return result;
