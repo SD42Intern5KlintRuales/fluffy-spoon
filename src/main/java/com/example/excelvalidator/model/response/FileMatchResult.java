@@ -12,6 +12,8 @@ public class FileMatchResult {
 
     private List<String> missingSheets;
 
+    private int matchedSheetCount;
+
     public boolean isMatched() {
         return matched;
     }
@@ -38,5 +40,13 @@ public class FileMatchResult {
             List<String> missingSheets
     ) {
         this.missingSheets = missingSheets;
+    }
+
+    public int getMatchedSheetCount() {
+        return matchedSheetCount;
+    }
+
+    public void setMatchedSheetCount(int matchedSheetCount) {
+        this.matchedSheetCount = matchedSheetCount;
     }
 }

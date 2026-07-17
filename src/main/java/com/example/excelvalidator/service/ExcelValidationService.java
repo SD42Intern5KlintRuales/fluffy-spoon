@@ -6,10 +6,14 @@ import com.example.excelvalidator.model.response.BatchValidationResponse;
 import com.example.excelvalidator.model.response.FileMatchResult;
 import com.example.excelvalidator.model.validation.v2.FileRuleConfig;
 import com.example.excelvalidator.model.validation.v2.ValidationConfig;
+import com.example.excelvalidator.model.validation.v2.TableRuleConfig;
+import com.example.excelvalidator.model.validation.v2.CellRuleConfig;
 import com.example.excelvalidator.model.response.FileValidationResult;
 import com.example.excelvalidator.service.engine.CellRuleEngine;
 import com.example.excelvalidator.service.engine.TableRuleEngine;
 import com.example.excelvalidator.service.engine.WorkbookRuleEngine;
+import com.example.excelvalidator.model.response.SheetValidationSummary;
+import com.example.excelvalidator.model.response.FieldValidationSummary;
 import tools.jackson.databind.ObjectMapper;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.slf4j.Logger;
@@ -88,6 +92,13 @@ public class ExcelValidationService {
                                     workbook
                             );
 
+                    List<String> workbookSheets = new ArrayList<>();
+                    for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
+                        workbookSheets.add(
+                                workbook.getSheetAt(sheetIndex).getSheetName()
+                        );
+                    }
+
                     FileValidationResult result;
 
                     if (!matchResult.isMatched()) {
@@ -95,7 +106,9 @@ public class ExcelValidationService {
                         result =
                                 buildMissingSheetResult(
                                         file.getOriginalFilename(),
-                                        matchResult.getMissingSheets()
+                                        matchResult.getMissingSheets(),
+                                        workbookSheets,
+                                        matchResult.getMatchedSheetCount() > 0
                                 );
 
                     } else {
@@ -270,12 +283,12 @@ public class ExcelValidationService {
 
             ruleExecutorRegistry
                     .get("cellRules")
-                    .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.CellRuleConfig>>) exec)
+                    .ifPresent(exec -> ((RuleExecutor<List<CellRuleConfig>>) exec)
                             .execute(workbook, fileConfig.getCellRules(), errors, passedFields));
 
             ruleExecutorRegistry
                     .get("tableRules")
-                    .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.TableRuleConfig>>) exec)
+                    .ifPresent(exec -> ((RuleExecutor<List<TableRuleConfig>>) exec)
                             .execute(workbook, fileConfig.getTableRules(), errors, passedFields));
 
         } catch (Exception ex) {
@@ -329,6 +342,9 @@ public class ExcelValidationService {
         List<String> closestMissingSheets =
                 new ArrayList<>();
 
+        int bestMatchedCount =
+                -1;
+
         int smallestMissingCount =
                 Integer.MAX_VALUE;
 
@@ -357,12 +373,15 @@ public class ExcelValidationService {
                                 requiredSheet
                         ) == null
                 ) {
-
                     missingSheets.add(
                             requiredSheet
                     );
                 }
             }
+
+            int matchedCount =
+                    fileConfig.getRequiredSheets().size()
+                            - missingSheets.size();
 
             if (missingSheets.isEmpty()) {
 
@@ -382,15 +401,27 @@ public class ExcelValidationService {
             }
 
             if (
-                    missingSheets.size()
-                            < smallestMissingCount
+                    matchedCount > bestMatchedCount
+                            || (matchedCount == bestMatchedCount
+                                    && missingSheets.size() < smallestMissingCount)
             ) {
+
+                bestMatchedCount =
+                        matchedCount;
 
                 smallestMissingCount =
                         missingSheets.size();
 
                 closestMissingSheets =
                         missingSheets;
+
+                result.setFileConfig(
+                        fileConfig
+                );
+
+                result.setMatchedSheetCount(
+                        matchedCount
+                );
             }
         }
 
@@ -401,6 +432,74 @@ public class ExcelValidationService {
         result.setMissingSheets(
                 closestMissingSheets
         );
+
+        return result;
+    }
+
+    private FileValidationResult buildMissingSheetResult(
+            String fileName,
+            List<String> missingSheets,
+            List<String> presentSheets,
+            boolean candidateHasMatch
+    ) {
+
+        FileValidationResult result =
+                new FileValidationResult();
+
+        result.setFileName(
+                fileName
+        );
+
+        result.setStatus(
+                "FAILED"
+        );
+
+        result.setValid(
+                false
+        );
+
+        result.setTotalChecks(
+                1
+        );
+
+        result.setPassedChecks(
+                0
+        );
+
+        result.setFailedChecks(
+                1
+        );
+
+        SheetValidationSummary sheetValidations = new SheetValidationSummary();
+        sheetValidations.setSheetsChecked(presentSheets.size());
+        sheetValidations.setPresentSheets(presentSheets);
+        sheetValidations.setMissingSheets(missingSheets);
+
+        FieldValidationSummary fieldValidations = new FieldValidationSummary();
+        fieldValidations.setPassedFieldChecks(0);
+        fieldValidations.setFailedFieldChecks(0);
+        fieldValidations.setPassedFields(new ArrayList<>());
+        fieldValidations.setFailedFields(new ArrayList<>());
+
+        result.setSheetValidations(sheetValidations);
+        result.setFieldValidations(fieldValidations);
+
+        if (candidateHasMatch) {
+            result.setMessage(
+                    "Workbook does not match any configured validation template. "
+                            + "Found sheets: "
+                            + (presentSheets.isEmpty() ? "none" : String.join(", ", presentSheets))
+                            + ". Missing required sheet(s): "
+                            + (missingSheets.isEmpty() ? "none" : String.join(", ", missingSheets))
+                            + ". Please verify the workbook sheet names or update the validation rules."
+            );
+        } else {
+            result.setMessage(
+                    "Workbook does not match any configured validation template. "
+                            + "The workbook sheets do not match any known file type configuration. "
+                            + "Please verify the workbook contains an expected sheet set or add a new rule template."
+            );
+        }
 
         return result;
     }
@@ -428,7 +527,7 @@ public class ExcelValidationService {
 
         ruleExecutorRegistry
                 .get("cellRules")
-                .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.CellRuleConfig>>) exec)
+                .ifPresent(exec -> ((RuleExecutor<List<CellRuleConfig>>) exec)
                         .execute(workbook, fileConfig.getCellRules(), errors, passedFields));
 
         if (fileConfig.getTableRules() == null) {
@@ -439,7 +538,7 @@ public class ExcelValidationService {
 
         ruleExecutorRegistry
                 .get("tableRules")
-                .ifPresent(exec -> ((RuleExecutor<List<com.example.excelvalidator.model.validation.v2.TableRuleConfig>>) exec)
+                .ifPresent(exec -> ((RuleExecutor<List<TableRuleConfig>>) exec)
                         .execute(workbook, fileConfig.getTableRules(), errors, passedFields));
 
         int failedChecks =
@@ -470,7 +569,7 @@ public class ExcelValidationService {
                 .map(CellValidationResults::field)
                 .collect(java.util.stream.Collectors.toList());
 
-        com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
+        SheetValidationSummary sheetValidations = new SheetValidationSummary();
         sheetValidations.setSheetsChecked(fileConfig.getRequiredSheets() != null ? fileConfig.getRequiredSheets().size() : 0);
         sheetValidations.setPresentSheets(presentSheets);
         sheetValidations.setMissingSheets(missingSheets);
@@ -483,7 +582,7 @@ public class ExcelValidationService {
                 .filter(e -> !"Workbook".equals(e.sheet()))
                 .collect(java.util.stream.Collectors.toList());
 
-        com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
+        FieldValidationSummary fieldValidations = new FieldValidationSummary();
         fieldValidations.setPassedFieldChecks(fieldPassed.size());
         fieldValidations.setFailedFieldChecks(fieldFailed.size());
         fieldValidations.setPassedFields(fieldPassed);
@@ -523,60 +622,6 @@ public class ExcelValidationService {
         return result;
     }
 
-    private FileValidationResult buildMissingSheetResult(
-            String fileName,
-            List<String> missingSheets
-    ) {
-
-        FileValidationResult result =
-                new FileValidationResult();
-
-        result.setFileName(
-                fileName
-        );
-
-        result.setStatus(
-                "FAILED"
-        );
-
-        result.setValid(
-                false
-        );
-
-        result.setTotalChecks(
-                1
-        );
-
-        result.setPassedChecks(
-                0
-        );
-
-        result.setFailedChecks(
-                1
-        );
-
-        com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
-        sheetValidations.setSheetsChecked(missingSheets.size());
-        sheetValidations.setPresentSheets(new ArrayList<>());
-        sheetValidations.setMissingSheets(missingSheets);
-
-        com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
-        fieldValidations.setPassedFieldChecks(0);
-        fieldValidations.setFailedFieldChecks(0);
-        fieldValidations.setPassedFields(new ArrayList<>());
-        fieldValidations.setFailedFields(new ArrayList<>());
-
-        result.setSheetValidations(sheetValidations);
-        result.setFieldValidations(fieldValidations);
-
-        result.setMessage(
-                "This workbook does not match any configured validation template. "
-                        + "Add or update its rules in the validation JSON before retrying."
-        );
-
-        return result;
-    }
-
     private BatchValidationResponse buildConfigErrorResponse(
             List<MultipartFile> files,
             String message
@@ -592,12 +637,12 @@ public class ExcelValidationService {
             result.setTotalChecks(1);
             result.setPassedChecks(0);
             result.setFailedChecks(1);
-            com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
+            SheetValidationSummary sheetValidations = new SheetValidationSummary();
             sheetValidations.setSheetsChecked(0);
             sheetValidations.setPresentSheets(new ArrayList<>());
             sheetValidations.setMissingSheets(new ArrayList<>());
 
-            com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
+            FieldValidationSummary fieldValidations = new FieldValidationSummary();
             fieldValidations.setPassedFieldChecks(0);
             fieldValidations.setFailedFieldChecks(0);
             fieldValidations.setPassedFields(new ArrayList<>());
@@ -653,12 +698,12 @@ public class ExcelValidationService {
                 1
         );
 
-        com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
+        SheetValidationSummary sheetValidations = new SheetValidationSummary();
         sheetValidations.setSheetsChecked(0);
         sheetValidations.setPresentSheets(new ArrayList<>());
         sheetValidations.setMissingSheets(new ArrayList<>());
 
-        com.example.excelvalidator.model.response.FieldValidationSummary fieldValidations = new com.example.excelvalidator.model.response.FieldValidationSummary();
+        FieldValidationSummary fieldValidations = new FieldValidationSummary();
         fieldValidations.setPassedFieldChecks(0);
         fieldValidations.setFailedFieldChecks(0);
         fieldValidations.setPassedFields(new ArrayList<>());
