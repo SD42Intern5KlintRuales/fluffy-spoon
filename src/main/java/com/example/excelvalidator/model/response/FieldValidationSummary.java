@@ -1,6 +1,6 @@
 package com.example.excelvalidator.model.response;
 
-import com.example.excelvalidator.model.CellValidationError;
+import com.example.excelvalidator.model.CellValidationResults;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
@@ -13,8 +13,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 public class FieldValidationSummary {
     private int passedFieldChecks;
     private int failedFieldChecks;
-    private List<CellValidationError> passedFields;
-    private List<CellValidationError> failedFields;
+    private List<CellValidationResults> passedFields;
+    private List<CellValidationResults> failedFields;
 
     public int getPassedFieldChecks() {
         return passedFieldChecks;
@@ -32,19 +32,19 @@ public class FieldValidationSummary {
         this.failedFieldChecks = failedFieldChecks;
     }
 
-    public List<CellValidationError> getPassedFields() {
+    public List<CellValidationResults> getPassedFields() {
         return passedFields;
     }
 
-    public void setPassedFields(List<CellValidationError> passedFields) {
+    public void setPassedFields(List<CellValidationResults> passedFields) {
         this.passedFields = passedFields;
     }
 
-    public List<CellValidationError> getFailedFields() {
+    public List<CellValidationResults> getFailedFields() {
         return failedFields;
     }
 
-    public void setFailedFields(List<CellValidationError> failedFields) {
+    public void setFailedFields(List<CellValidationResults> failedFields) {
         this.failedFields = failedFields;
     }
 }

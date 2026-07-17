@@ -1,6 +1,6 @@
 package com.example.excelvalidator.service.engine;
 
-import com.example.excelvalidator.model.CellValidationError;
+import com.example.excelvalidator.model.CellValidationResults;
 import com.example.excelvalidator.model.validation.v2.FileRuleConfig;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.stereotype.Component;
@@ -13,8 +13,8 @@ public class WorkbookRuleEngine {
     public void validateRequiredSheets(
             Workbook workbook,
             FileRuleConfig fileConfig,
-            List<CellValidationError> errors,
-            List<CellValidationError> passedFields
+            List<CellValidationResults> errors,
+            List<CellValidationResults> passedFields
     ) {
 
         for (String requiredSheet :
@@ -26,9 +26,8 @@ public class WorkbookRuleEngine {
             ) {
 
                 errors.add(
-                        new CellValidationError(
+                        new CellValidationResults(
                                 "Workbook",
-                                0,
                                 "",
                                 requiredSheet,
                                 "",
@@ -37,9 +36,8 @@ public class WorkbookRuleEngine {
                 );
             } else {
                 passedFields.add(
-                        new CellValidationError(
+                        new CellValidationResults(
                                 "Workbook",
-                                0,
                                 "",
                                 requiredSheet,
                                 "",

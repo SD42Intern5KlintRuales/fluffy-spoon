@@ -1,7 +1,7 @@
 package com.example.excelvalidator;
 
 import com.example.excelvalidator.model.ExcelValidationResponse;
-import com.example.excelvalidator.model.CellValidationError;
+import com.example.excelvalidator.model.CellValidationResults;
 import com.example.excelvalidator.service.ExcelValidationService;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -68,7 +68,7 @@ public class ExcelValidationTableFailureTest {
 
             // Expect 5 required columns (A-E) to be flagged for the single table row
             assertThat(resp.failedChecks()).isEqualTo(resp.errors().size());
-            List<String> cols = resp.errors().stream().map(CellValidationError::column).collect(Collectors.toList());
+            List<String> cols = resp.errors().stream().map(CellValidationResults::cell).collect(Collectors.toList());
             // Verify at least A-E were reported
             assertThat(cols).contains("A", "B", "C", "D", "E");
         }

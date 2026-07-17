@@ -1,6 +1,6 @@
 package com.example.excelvalidator.service;
 
-import com.example.excelvalidator.model.CellValidationError;
+import com.example.excelvalidator.model.CellValidationResults;
 import com.example.excelvalidator.model.validation.ColumnRuleConfig;
 import com.example.excelvalidator.model.validation.RuleConfig;
 import com.example.excelvalidator.model.validation.SheetRuleConfig;
@@ -17,7 +17,7 @@ public class JsonRuleEngine {
             Sheet sheet,
             SheetRuleConfig sheetConfig,
             DataFormatter formatter,
-            List<CellValidationError> errors
+            List<CellValidationResults> errors
     ){
         int rowsChecked = 0;
 
@@ -62,7 +62,7 @@ public class JsonRuleEngine {
             int rowIndex,
             ColumnRuleConfig columnConfig,
             DataFormatter formatter,
-            List<CellValidationError> errors
+            List<CellValidationResults> errors
     ){
         int columnIndex = columnToIndex(columnConfig.getColumn());
 
@@ -85,10 +85,9 @@ public class JsonRuleEngine {
                 if (value.isBlank()) {
 
                     errors.add(
-                            new CellValidationError(
+                            new CellValidationResults(
                                     sheet.getSheetName(),
-                                    rowIndex + 1,
-                                    columnConfig.getColumn(),
+                                    columnConfig.getColumn() + (rowIndex + 1),
                                     columnConfig.getField(),
                                     value,
                                     columnConfig.getField()

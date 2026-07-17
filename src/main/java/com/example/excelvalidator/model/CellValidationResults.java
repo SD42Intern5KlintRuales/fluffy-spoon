@@ -1,9 +1,8 @@
 package com.example.excelvalidator.model;
 
-public record CellValidationError(
+public record CellValidationResults(
         String sheet,
-        int row,
-        String column,
+        String cell,
         String field,
         String value,
         String message

@@ -1,8 +1,5 @@
 package com.example.excelvalidator.model.response;
 
-import com.example.excelvalidator.model.CellValidationError;
-
-import java.util.List;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({

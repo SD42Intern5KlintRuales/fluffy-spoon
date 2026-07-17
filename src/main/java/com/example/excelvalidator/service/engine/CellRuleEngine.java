@@ -1,6 +1,6 @@
 package com.example.excelvalidator.service.engine;
 
-import com.example.excelvalidator.model.CellValidationError;
+import com.example.excelvalidator.model.CellValidationResults;
 import com.example.excelvalidator.model.validation.v2.CellRuleConfig;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellReference;
@@ -17,8 +17,8 @@ public class CellRuleEngine {
     public void validateCellRules(
             Workbook workbook,
             List<CellRuleConfig> rules,
-            List<CellValidationError> errors,
-            List<CellValidationError> passedFields
+            List<CellValidationResults> errors,
+            List<CellValidationResults> passedFields
     ){
         DataFormatter formatter = new DataFormatter();
 
@@ -44,8 +44,8 @@ public class CellRuleEngine {
             Sheet sheet,
             CellRuleConfig rule,
             DataFormatter formatter,
-            List<CellValidationError> errors,
-            List<CellValidationError> passedFields
+            List<CellValidationResults> errors,
+            List<CellValidationResults> passedFields
     ) {
         String cellAddress = rule.getCell();
 
@@ -85,8 +85,8 @@ public class CellRuleEngine {
             CellRuleConfig rule,
             String value,
             Cell cell,
-            List<CellValidationError> errors,
-            List<CellValidationError> passedFields
+            List<CellValidationResults> errors,
+            List<CellValidationResults> passedFields
     ){
         if(
                 "REQUIRED".equalsIgnoreCase(
@@ -95,9 +95,8 @@ public class CellRuleEngine {
         ){
             if(value.isBlank()){
                 errors.add(
-                        new CellValidationError(
+                        new CellValidationResults(
                                 sheet.getSheetName(),
-                                ref.getRow() + 1,
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,
@@ -106,9 +105,8 @@ public class CellRuleEngine {
                 );
             } else {
                 passedFields.add(
-                        new CellValidationError(
+                        new CellValidationResults(
                                 sheet.getSheetName(),
-                                ref.getRow() + 1,
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,
@@ -121,9 +119,8 @@ public class CellRuleEngine {
         ){
             if(value.isBlank()){
                 errors.add(
-                        new CellValidationError(
+                        new CellValidationResults(
                                 sheet.getSheetName(),
-                                ref.getRow() + 1,
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,
@@ -144,9 +141,8 @@ public class CellRuleEngine {
 
             if(!validDate){
                 errors.add(
-                        new CellValidationError(
+                        new CellValidationResults(
                                 sheet.getSheetName(),
-                                ref.getRow() + 1,
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,
@@ -155,9 +151,8 @@ public class CellRuleEngine {
                 );
             } else {
                 passedFields.add(
-                        new CellValidationError(
+                        new CellValidationResults(
                                 sheet.getSheetName(),
-                                ref.getRow() + 1,
                                 rule.getCell(),
                                 rule.getFieldName(),
                                 value,

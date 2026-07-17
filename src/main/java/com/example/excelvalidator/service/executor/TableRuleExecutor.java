@@ -1,6 +1,6 @@
 package com.example.excelvalidator.service.executor;
 
-import com.example.excelvalidator.model.CellValidationError;
+import com.example.excelvalidator.model.CellValidationResults;
 import com.example.excelvalidator.model.validation.v2.TableRuleConfig;
 import com.example.excelvalidator.service.RuleExecutor;
 import com.example.excelvalidator.service.engine.TableRuleEngine;
@@ -28,7 +28,7 @@ public class TableRuleExecutor implements RuleExecutor<List<TableRuleConfig>> {
     }
 
     @Override
-    public void execute(Workbook workbook, List<TableRuleConfig> ruleObject, List<CellValidationError> errors, List<CellValidationError> passedFields) {
+    public void execute(Workbook workbook, List<TableRuleConfig> ruleObject, List<CellValidationResults> errors, List<CellValidationResults> passedFields) {
         if (ruleObject == null) {
             return;
         }

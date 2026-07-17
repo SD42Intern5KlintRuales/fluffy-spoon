@@ -1,6 +1,6 @@
 package com.example.excelvalidator.service;
 
-import com.example.excelvalidator.model.CellValidationError;
+import com.example.excelvalidator.model.CellValidationResults;
 import com.example.excelvalidator.model.ExcelValidationResponse;
 import com.example.excelvalidator.model.response.BatchValidationResponse;
 import com.example.excelvalidator.model.response.FileMatchResult;
@@ -211,10 +211,10 @@ public class ExcelValidationService {
         List<String> sheets =
                 new ArrayList<>();
 
-        List<CellValidationError> errors =
+        List<CellValidationResults> errors =
                 new ArrayList<>();
 
-        List<CellValidationError> passedFields =
+        List<CellValidationResults> passedFields =
                 new ArrayList<>();
 
         int rowsChecked = 0;
@@ -414,10 +414,10 @@ public class ExcelValidationService {
         FileValidationResult result =
                 new FileValidationResult();
 
-        List<CellValidationError> errors =
+        List<CellValidationResults> errors =
                 new ArrayList<>();
 
-        List<CellValidationError> passedFields =
+        List<CellValidationResults> passedFields =
                 new ArrayList<>();
 
         // Use registry-driven executors for consistency with configuration-driven flow
@@ -462,12 +462,12 @@ public class ExcelValidationService {
         // Separate sheet validations and field validations
         java.util.List<String> presentSheets = passedFields.stream()
                 .filter(e -> "Workbook".equals(e.sheet()))
-                .map(CellValidationError::field)
+                .map(CellValidationResults::field)
                 .collect(java.util.stream.Collectors.toList());
         
         java.util.List<String> missingSheets = errors.stream()
                 .filter(e -> "Workbook".equals(e.sheet()))
-                .map(CellValidationError::field)
+                .map(CellValidationResults::field)
                 .collect(java.util.stream.Collectors.toList());
 
         com.example.excelvalidator.model.response.SheetValidationSummary sheetValidations = new com.example.excelvalidator.model.response.SheetValidationSummary();
@@ -475,11 +475,11 @@ public class ExcelValidationService {
         sheetValidations.setPresentSheets(presentSheets);
         sheetValidations.setMissingSheets(missingSheets);
 
-        java.util.List<CellValidationError> fieldPassed = passedFields.stream()
+        java.util.List<CellValidationResults> fieldPassed = passedFields.stream()
                 .filter(e -> !"Workbook".equals(e.sheet()))
                 .collect(java.util.stream.Collectors.toList());
                 
-        java.util.List<CellValidationError> fieldFailed = errors.stream()
+        java.util.List<CellValidationResults> fieldFailed = errors.stream()
                 .filter(e -> !"Workbook".equals(e.sheet()))
                 .collect(java.util.stream.Collectors.toList());
 

@@ -9,7 +9,7 @@ public record ExcelValidationResponse(
         int failedChecks,
         int passedChecks,
         List<String> sheets,
-        List<CellValidationError> passedFields,
-        List<CellValidationError> errors
+        List<CellValidationResults> passedFields,
+        List<CellValidationResults> errors
 ) {
 }
