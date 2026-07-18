@@ -1,30 +1,33 @@
 package com.example.excelvalidator.service;
 
-import com.example.excelvalidator.model.CellValidationResults;
-import com.example.excelvalidator.model.ExcelValidationResponse;
-import com.example.excelvalidator.model.response.BatchValidationResponse;
-import com.example.excelvalidator.model.response.FileMatchResult;
-import com.example.excelvalidator.model.validation.v2.FileRuleConfig;
-import com.example.excelvalidator.model.validation.v2.ValidationConfig;
-import com.example.excelvalidator.model.validation.v2.TableRuleConfig;
-import com.example.excelvalidator.model.validation.v2.CellRuleConfig;
-import com.example.excelvalidator.model.response.FileValidationResult;
-import com.example.excelvalidator.service.engine.CellRuleEngine;
-import com.example.excelvalidator.service.engine.TableRuleEngine;
-import com.example.excelvalidator.service.engine.WorkbookRuleEngine;
-import com.example.excelvalidator.model.response.SheetValidationSummary;
-import com.example.excelvalidator.model.response.FieldValidationSummary;
-import tools.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.apache.poi.ss.usermodel.Sheet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.example.excelvalidator.model.CellValidationResults;
+import com.example.excelvalidator.model.ExcelValidationResponse;
+import com.example.excelvalidator.model.response.BatchValidationResponse;
+import com.example.excelvalidator.model.response.FieldValidationSummary;
+import com.example.excelvalidator.model.response.FileMatchResult;
+import com.example.excelvalidator.model.response.FileValidationResult;
+import com.example.excelvalidator.model.response.SheetValidationSummary;
+import com.example.excelvalidator.model.validation.v2.CellRuleConfig;
+import com.example.excelvalidator.model.validation.v2.FileRuleConfig;
+import com.example.excelvalidator.model.validation.v2.TableRuleConfig;
+import com.example.excelvalidator.model.validation.v2.ValidationConfig;
+import com.example.excelvalidator.service.engine.CellRuleEngine;
+import com.example.excelvalidator.service.engine.TableRuleEngine;
+import com.example.excelvalidator.service.engine.WorkbookRuleEngine;
+
+import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class ExcelValidationService {
@@ -89,26 +92,17 @@ public class ExcelValidationService {
                     FileMatchResult matchResult =
                             findMatchingConfig(
                                     config,
-                                    workbook
+                                    file.getOriginalFilename()
                             );
-
-                    List<String> workbookSheets = new ArrayList<>();
-                    for (int sheetIndex = 0; sheetIndex < workbook.getNumberOfSheets(); sheetIndex++) {
-                        workbookSheets.add(
-                                workbook.getSheetAt(sheetIndex).getSheetName()
-                        );
-                    }
 
                     FileValidationResult result;
 
                     if (!matchResult.isMatched()) {
 
                         result =
-                                buildMissingSheetResult(
+                                buildNoMatchResult(
                                         file.getOriginalFilename(),
-                                        matchResult.getMissingSheets(),
-                                        workbookSheets,
-                                        matchResult.getMatchedSheetCount() > 0
+                                        config
                                 );
 
                     } else {
@@ -333,61 +327,36 @@ public class ExcelValidationService {
 
     private FileMatchResult findMatchingConfig(
             ValidationConfig config,
-            Workbook workbook
+            String uploadedFileName
     ) {
 
         FileMatchResult result =
                 new FileMatchResult();
 
-        List<String> closestMissingSheets =
-                new ArrayList<>();
-
-        int bestMatchedCount =
-                -1;
-
-        int smallestMissingCount =
-                Integer.MAX_VALUE;
+        String uploadedBaseName =
+                stripExcelExtension(uploadedFileName);
 
         for (
                 FileRuleConfig fileConfig
                 : config.getFiles()
         ) {
 
-            if (
-                    fileConfig.getRequiredSheets()
-                            == null
-            ) {
+            if (fileConfig.getFileType() == null) {
                 continue;
             }
 
-            List<String> missingSheets =
-                    new ArrayList<>();
+            String configBaseName =
+                    stripExcelExtension(
+                            fileConfig.getFileType()
+                    );
 
-            for (
-                    String requiredSheet
-                    : fileConfig.getRequiredSheets()
+            if (
+                    configBaseName.equalsIgnoreCase(
+                            uploadedBaseName
+                    )
             ) {
 
-                if (
-                        workbook.getSheet(
-                                requiredSheet
-                        ) == null
-                ) {
-                    missingSheets.add(
-                            requiredSheet
-                    );
-                }
-            }
-
-            int matchedCount =
-                    fileConfig.getRequiredSheets().size()
-                            - missingSheets.size();
-
-            if (missingSheets.isEmpty()) {
-
-                result.setMatched(
-                        true
-                );
+                result.setMatched(true);
 
                 result.setFileConfig(
                         fileConfig
@@ -399,48 +368,29 @@ public class ExcelValidationService {
 
                 return result;
             }
-
-            if (
-                    matchedCount > bestMatchedCount
-                            || (matchedCount == bestMatchedCount
-                                    && missingSheets.size() < smallestMissingCount)
-            ) {
-
-                bestMatchedCount =
-                        matchedCount;
-
-                smallestMissingCount =
-                        missingSheets.size();
-
-                closestMissingSheets =
-                        missingSheets;
-
-                result.setFileConfig(
-                        fileConfig
-                );
-
-                result.setMatchedSheetCount(
-                        matchedCount
-                );
-            }
         }
 
-        result.setMatched(
-                false
-        );
+        result.setMatched(false);
 
         result.setMissingSheets(
-                closestMissingSheets
+                new ArrayList<>()
         );
 
         return result;
     }
 
-    private FileValidationResult buildMissingSheetResult(
+    private String stripExcelExtension(String name) {
+        if (name == null) {
+            return "";
+        }
+        return name
+                .replaceAll("(?i)\\.(xlsx|xls)$", "")
+                .trim();
+    }
+
+    private FileValidationResult buildNoMatchResult(
             String fileName,
-            List<String> missingSheets,
-            List<String> presentSheets,
-            boolean candidateHasMatch
+            ValidationConfig config
     ) {
 
         FileValidationResult result =
@@ -471,9 +421,9 @@ public class ExcelValidationService {
         );
 
         SheetValidationSummary sheetValidations = new SheetValidationSummary();
-        sheetValidations.setSheetsChecked(presentSheets.size());
-        sheetValidations.setPresentSheets(presentSheets);
-        sheetValidations.setMissingSheets(missingSheets);
+        sheetValidations.setSheetsChecked(0);
+        sheetValidations.setPresentSheets(new ArrayList<>());
+        sheetValidations.setMissingSheets(new ArrayList<>());
 
         FieldValidationSummary fieldValidations = new FieldValidationSummary();
         fieldValidations.setPassedFieldChecks(0);
@@ -484,20 +434,24 @@ public class ExcelValidationService {
         result.setSheetValidations(sheetValidations);
         result.setFieldValidations(fieldValidations);
 
-        if (candidateHasMatch) {
+        List<String> availableTemplates = config.getFiles()
+                .stream()
+                .map(FileRuleConfig::getFileType)
+                .filter(ft -> ft != null && !ft.isBlank())
+                .collect(Collectors.toList());
+
+        if (availableTemplates.isEmpty()) {
             result.setMessage(
-                    "Workbook does not match any configured validation template. "
-                            + "Found sheets: "
-                            + (presentSheets.isEmpty() ? "none" : String.join(", ", presentSheets))
-                            + ". Missing required sheet(s): "
-                            + (missingSheets.isEmpty() ? "none" : String.join(", ", missingSheets))
-                            + ". Please verify the workbook sheet names or update the validation rules."
+                    "No validation templates are configured. "
+                            + "Please provide a valid rules JSON file with configured file types."
             );
         } else {
             result.setMessage(
-                    "Workbook does not match any configured validation template. "
-                            + "The workbook sheets do not match any known file type configuration. "
-                            + "Please verify the workbook contains an expected sheet set or add a new rule template."
+                    "No validation template found for file '" + fileName + "'. "
+                            + "The filename does not match any configured file type. "
+                            + "Available templates: "
+                            + String.join(", ", availableTemplates)
+                            + ". Please rename the file to match a template or add a new configuration."
             );
         }
 
@@ -551,7 +505,7 @@ public class ExcelValidationService {
                 failedChecks + passedChecks;
 
         result.setFileName(
-                fileName
+                stripExcelExtension(fileName)
         );
 
         result.setFileType(
