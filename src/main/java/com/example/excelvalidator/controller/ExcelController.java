@@ -38,7 +38,7 @@ public class ExcelController {
     }
 
     @PostMapping(
-            value = "/validate-batch",
+            value = "/validate-documents",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<BatchValidationResponse> validateBatch(

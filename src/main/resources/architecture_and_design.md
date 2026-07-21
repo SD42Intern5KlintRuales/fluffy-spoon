@@ -169,3 +169,39 @@ classDiagram
 - `stripExcelExtension(String filename)`: Normalizes filenames for configuration matching.
 - `columnToIndex(String columnLetter)`: Converts "A" to 0, "B" to 1.
 - `extractCellValueSafe(Cell cell)`: Trims whitespace, handles dates, numbers, and text uniformly.
+
+
+The Release Document Validation Tool is an automation system designed to validate the completeness of Release Notes and Test Specification/Result Excel documents before they are submitted for review or release.
+
+The purpose of the tool is to eliminate manual document verification by automatically checking whether required fields, sections, and checklist items contain the necessary information. The system will analyze uploaded Excel files, validate predefined fields based on configurable validation rules, and generate a detailed validation report identifying missing or incomplete entries.
+
+The tool will support multiple document templates, including Release Notes and Test Specification/Result files. Validation rules will be maintained through a configuration file, allowing administrators to add, modify, or remove required checks without changing the source code. This approach improves maintainability, reduces human error, and ensures that release-related documents meet the required quality and documentation standards before approval and distribution.
+
+Key Features
+Upload and validate Release Notes and Test Specification/Result Excel files.
+
+Verify the presence of required information in predefined cells and table sections.
+
+Detect missing, blank, or incomplete required fields.
+
+Generate detailed validation results with pass and fail statuses.
+
+Display overall validation statistics and summaries.
+
+Support configurable validation rules through external JSON configuration files.
+
+Provide clear error messages to help users quickly identify and correct documentation issues.
+
+Expected Benefits
+Reduces time spent on manual document reviews.
+
+Improves consistency and accuracy of release documentation.
+
+Minimizes the risk of incomplete releases caused by missing information.
+
+Provides transparency and standardization in document validation processes.
+
+Enables easy maintenance and expansion of validation rules without code changes.
+
+Project Objective
+To develop a configurable Excel document validation tool that automatically verifies the completeness of Release Notes and Test Specification/Result documents, ensuring that all required information is properly provided before the documents proceed to the review, approval, and release stages.
